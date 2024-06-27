@@ -1,0 +1,5 @@
+On se connecte à la vm avec ssh. On sort l'executable et on le met dans dogbolt. 
+On voit tout de suite dans la source décompilée que le mdp attendu est 5276. 
+On met ce mdp dans le scanf après avoir lancé le programme, et on est 
+authentifié en tant que level01. 
+On fait cat ~level01/.pass pour obtenir le flag. 
