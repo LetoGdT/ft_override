@@ -1,0 +1,16 @@
+On récupère le programme et on le décompile avec dogbolt. On nettoie la source 
+en s'aidant avec un décompileur pour constater la présence d'un stack canary. 
+
+Dans la fonction decrypt, on voit que le programme fait ou exclusif sur la 
+chaîne "Q}|u`sfg~sf{}|a3", avec une valeur constante, et s'attend au résultat
+"Congratulations!". Si le résultat est bon, le programme execute un /bin/sh. 
+Avec un outil en ligne, on trouve que cette valeur constante est 18. 
+
+Dans la fonction test, on peut contrôler la valeur qui parvient à la fonction 
+decrypt en manipulant la valeur de password. Il faut que la valeur key-password
+soit entre 1 et 9, ou entre 16 et 21, sinon la valeur donnée à decrypt est 
+aléatoire. La valeur de 18 est dans cette étendue. 
+
+Il faut donc qu'on ait key-password=18. On a key=322424845, donc on trouve 
+password=322424827. On entre cette valeur dans le prompt du programme, qui 
+lance alors /bin/sh. On fait alors "cat ~level04/.pass" pour obtenir la flag. 
