@@ -24,7 +24,7 @@ int auth(char *login, int password)
     {
       if ( login[i] < ' ' )
         return 1;
-      v4 += (v4 ^ (unsigned int)s[i]) % 0x539;
+      v4 += (v4 ^ (unsigned int)login[i]) % 0x539;
     }
     return password != v4;
   }
@@ -37,6 +37,7 @@ int main(int argc, const char **argv)
   unsigned int stack_canary; // [esp+4Ch] [ebp-4h]
 
   stack_canary = __readgsdword(0x14u);
+  store_stack_canary_on_stack(stack_canary);
   puts("***********************************");
   puts("*\t\tlevel06\t\t  *");
   puts("***********************************");
