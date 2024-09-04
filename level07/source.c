@@ -29,7 +29,7 @@ int store_number(int *array)
   }
   else
   {
-    array[index] = unum;
+    *(_DWORD *)(array + 4 * index) = unum;
     return 0;
   }
 }
@@ -40,13 +40,13 @@ int read_number(int array)
 
   printf(" Index: ");
   index = get_unum();
-  printf(" Number at data[%u] is %u\n", index, array[index]);
+  printf(" Number at data[%u] is %u\n", index, *(_DWORD *)(array + 4 * index));
   return 0;
 }
 
 int main(int argc, const char **argv, const char **envp)
 {
-  int array[100]; // [esp+24h] [ebp-1B8h] BYREF
+  byte array[400]; // [esp+24h] [ebp-1B8h] BYREF
   int error; // [esp+1B4h] [ebp-28h]
   char s[20]; // [esp+1B8h] [ebp-24h] BYREF
   unsigned int stack_canary; // [esp+1CCh] [ebp-10h]

