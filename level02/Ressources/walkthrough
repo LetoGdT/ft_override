@@ -1,4 +1,4 @@
-On récupère le programme et le décompile avec dogbolt. On nettoie la soruce. 
+On récupère le programme et le décompile avec dogbolt. On nettoie la source. 
 On voit que le programme donne comme format à printf une string donnée par 
 l'utilisateur. C'est là la faille. 
 

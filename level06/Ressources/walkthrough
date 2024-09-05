@@ -1,5 +1,7 @@
-On décompile le programme, et constate qu'il y a une fonction auth, qui prend un mdp et un login et qu'une fois
-qu'on est authentifié, un /bin/sh est exécuté. Il va s'agir de reverse engineer cette fonction pour trouver 
-un mdp avec son login. La fonction calcule le mdp à partir du login, donc il suffit de copier la fonction dans
-un programme que l'on compile nous-même pour obtenir le mdp. On produit le script dans les ressources, et on 
-choisit le login "aaaaaa". Le script nous sort le mdp 6231562. On obtient alors un shell. 
+On décompile le programme, et constate qu'il y a une fonction auth, qui prend 
+un mdp et un login et qu'une fois qu'on est authentifié, un /bin/sh est exécuté.
+Il va s'agir de reverse engineer cette fonction pour trouver un mdp avec son 
+login. La fonction calcule le mdp à partir du login, donc il suffit de copier 
+la fonction dans un programme que l'on compile nous-même pour obtenir le mdp. 
+On produit le script dans les ressources, et on choisit le login "aaaaaa". Le 
+script nous sort le mdp 6231562. On obtient alors un shell. 

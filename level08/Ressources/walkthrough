@@ -1,8 +1,10 @@
-On décompile le programme, et on voit qu'il ouvre un fichier donné en paramètre, et le copie dans un fichier
-appelé ./backup/[le paramètre]. Il suffit donc de créer un dossier qui s'appelle .backups/home/users/level09. On
-ne peut pas créer ce dossier dans le homedir de level08 car il existe déjà et a les permissions de level09. 
-On se met donc dans /tmp, et on créer ce dossier. On lance ensuite le programme depuis /tmp en lui donnant
-le .pass de level09. 
+On décompile le programme, et on voit qu'il ouvre un fichier donné en paramètre, 
+et le copie dans un fichier appelé ./backup/[le paramètre]. Il suffit donc de 
+créer un dossier qui s'appelle .backups/home/users/level09. On ne peut pas créer 
+ce dossier dans le homedir de level08 car il existe déjà et a les permissions de 
+level09. 
+On se met donc dans /tmp, et on créer ce dossier. On lance ensuite le programme 
+depuis /tmp en lui donnant le .pass de level09. 
 L'attaque est donc ;
 $ cd /tmp
 $ mkdir -p ./backups/home/users/level09

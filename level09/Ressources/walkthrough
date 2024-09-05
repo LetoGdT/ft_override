@@ -1,11 +1,14 @@
-On décompile, et on voit que l'exécutable est en 64 bits. La faille du programme se situe dans un buffer overflow
-avec un strncpy, qui prend une taille qui peut être affecté par l'utilisateur. 
+On décompile, et on voit que l'exécutable est en 64 bits. La faille du programme 
+se situe dans un buffer overflow avec un strncpy, qui prend une taille qui peut 
+être affecté par l'utilisateur. 
 
-Le message et le nom d'utilisateur et l'int utilisé par strncpy sont consécutifs dans la mémoire, sur un buffer
-de 184 octets. Le buffer est memset à 0, et l'int est mis à 140. La fonction set_username est sensée écrire sur
-40 octets, à partir de l'offset 140, mais peut écrire 41 octets, permettant à l'utilisateur de réécrire l'octet
-de poid faile de l'int. Une fois que l'int est modifié on peut écrire plus loin que prévu dans la mémoire avec 
-la fonction set_msg, ce qui nous permet de réécrire l'adresse de retour de la fonction handle_msg. On va donc y 
+Le message et le nom d'utilisateur et l'int utilisé par strncpy sont consécutifs 
+dans la mémoire, sur un buffer de 184 octets. Le buffer est memset à 0, et l'int 
+est mis à 140. La fonction set_username est sensée écrire sur40 octets, à partir 
+de l'offset 140, mais peut écrire 41 octets, permettant à l'utilisateur de 
+réécrire l'octetde poid faile de l'int. Une fois que l'int est modifié on peut 
+écrire plus loin que prévu dans la mémoire avec la fonction set_msg, ce qui nous
+permet de réécrire l'adresse de retour de la fonction handle_msg. On va donc y 
 écrire l'adresse de la fonction secret_backdoor.
 
 On cherche l'adresse de la fonction secret backdoor avec gdb :
@@ -16,7 +19,8 @@ All functions matching regular expression "secret_backdoor":
 Non-debugging symbols:
 0x000055555555488c  secret_backdoor
 
-Avec gdb, on trouve l'adresse de main, à laquelle devrait ressembler l'adresse de retour que l'on cherche : 
+Avec gdb, on trouve l'adresse de main, à laquelle devrait ressembler l'adresse de 
+retour que l'on cherche : 
 info func main
 All functions matching regular expression "main":
 
@@ -34,8 +38,8 @@ Non-debugging symbols:
 0x00007ffff7b25690  __getdomainname_chk
 On voit que l'adresse que l'on cherche est 0x0000555555554aa8
 
-On met un breakpoint à la fin de la fonction handle_msg, et on examine la stack pour trouver l'adresse de 
-l'adresse de retour :
+On met un breakpoint à la fin de la fonction handle_msg, et on examine la stack 
+pour trouver l'adresse de l'adresse de retour :
 Breakpoint 1, 0x0000555555554930 in handle_msg ()
 (gdb) x/200x $rsp
 0x7fffffffe510: 0x62626262      0x62626262      0x62626262      0x62626262
@@ -56,13 +60,14 @@ On voit une adresse ressemblant à l'adresse à l'adresse 0x7fffffffe5d8
 
 Le début du buffer est à l'adresse 0x7fffffffe510
 
-La différence des deux est de 200 (0xc8) octets, donc on doit écrire 200 charactères poubelle, puis l'adresse de la 
-backdoor. 
+La différence des deux est de 200 (0xc8) octets, donc on doit écrire 200 charactères 
+poubelle, puis l'adresse de la backdoor. 
 
 On constitue la chaîne d'attaque comme suit :
--On écrit dans le username 40 charactères poublle, suivi d'un charactère dont la valeur est le nombre d'octets 
-qu'on voudra écrire dans le message. Dans le message, on veut écrire 200 charactères poubelles, et 4 octets 
-d'adresse, donc 204 octets, soit 0xcc. 
+-On écrit dans le username 40 charactères poublle, suivi d'un charactère dont la 
+valeur est le nombre d'octets qu'on voudra écrire dans le message. Dans le 
+message, on veut écrire 200 charactères poubelles, et 4 octets d'adresse, donc 
+204 octets, soit 0xcc. 
 -On ajoute un '\n' pour que le programme passe de username à message. 
 -On écrit 200 charactères poubelle
 -On écrit l'adresse de la backdoor, en ordre little endian

@@ -1,19 +1,25 @@
-On décompile le programme, on voit qu'il y a un fork, et que le parent surveille l'enfant et ses signaux. 
-Si l'enfant fait un syscall, le parent tue l'enfant. Pour passer outre cette protection, on va utiliser des 
-fonctions déjà présentes dans l'enfant. Avec gdb, on va chercher l'addresse de system :
+On décompile le programme, on voit qu'il y a un fork, et que le parent surveille
+l'enfant et ses signaux. Si l'enfant fait un syscall, le parent tue l'enfant. 
+Pour passer outre cette protection, on va utiliser des fonctions déjà présentes 
+dans l'enfant. Avec gdb, on va chercher l'addresse de system :
 (gdb) p system
 $1 = {<text variable, no debug info>} 0xf7e6aed0 <system>
-Ensuite, on va chercher dans la mémoire la string "/bin/sh", et on la passe en argument à system
+Ensuite, on va chercher dans la mémoire la string "/bin/sh", et on la passe en 
+argument à system
 (gdb) find 0xf7e2c000, 0xf7fcc000, "/bin/sh"
 0xf7f897ec
 1 pattern found.
 (gdb) p (char *)0xf7f897ec
 $1 = 0xf7f897ec "/bin/sh"
 
-On utilise le site habituel pour trouver l'offset de l'adresse de retour du main de l'enfant. On trouve 156. 
-Comme on met l'adresse du système qui est appelée directement sur la stack, on n'utilise pas l'instruction call
-qui devrait mettre une adresse de retour sur la stack. On doit compenser cette différence en mettant 4 octets sur
-la stack entre l'adresse de system et l'adresse de /bin/sh
+On utilise le site habituel pour trouver l'offset de l'adresse de retour du main
+de l'enfant. Pour suivrel'exéuction de l'enfant au moment du fork, on fait :
+(gdb) set follow-fork-mode child
+On trouve 156. 
+Comme on met l'adresse du système qui est appelée directement sur la stack, on 
+n'utilise pas l'instruction call qui devrait mettre une adresse de retour sur 
+la stack. On doit compenser cette différence en mettant 4 octets sur la stack 
+entre l'adresse de system et l'adresse de /bin/sh
 
 On construit donc notre payload de la façon suivante :
 
