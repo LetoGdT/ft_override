@@ -10,26 +10,16 @@ int secret_backdoor()
 
 int handle_msg()
 {
-  char message[140]; // [rsp+0h] [rbp-C0h] BYREF
-  __int64 v2; // [rsp+8Ch] [rbp-34h]
-  __int64 v3; // [rsp+94h] [rbp-2Ch]
-  __int64 v4; // [rsp+9Ch] [rbp-24h]
-  __int64 v5; // [rsp+A4h] [rbp-1Ch]
-  __int64 v6; // [rsp+ACh] [rbp-14h]
-  int v7; // [rsp+B4h] [rbp-Ch]
+  char message[184]; // [rsp+0h] [rbp-C0h] BYREF
 
-  v2 = 0LL;
-  v3 = 0LL;
-  v4 = 0LL;
-  v5 = 0LL;
-  v6 = 0LL;
-  v7 = 140;
-  set_username((__int64)message);
-  set_msg((__int64)message);
+  memset(message, 0, 180);
+  *(int *)(message + 180) = 140;
+  set_username(message);
+  set_msg(message);
   return puts(">: Msg sent!");
 }
 
-char *__fastcall set_msg(__int64 a1)
+char * set_msg(char* message)
 {
   char s[1024]; // [rsp+10h] [rbp-400h] BYREF
 
@@ -37,25 +27,25 @@ char *__fastcall set_msg(__int64 a1)
   puts(">: Msg @Unix-Dude");
   printf(">>: ");
   fgets(s, 1024, stdin);
-  return strncpy((char *)a1, s, *(int *)(a1 + 180));
+  return strncpy(message, s, *(int *)(message + 180));
 }
 
-int __fastcall set_username(__int64 a1)
+int set_username(char* message)
 {
   char s[140]; // [rsp+10h] [rbp-90h] BYREF
   int i; // [rsp+9Ch] [rbp-4h]
 
-  memset(s, 0, 0x80uLL);
+  memset(s, 0, 128);
   puts(">: Enter your username");
   printf(">>: ");
   fgets(s, 128, stdin);
   for ( i = 0; i <= 40 && s[i]; ++i )
-    *(_BYTE *)(a1 + i + 140) = s[i];
-  return printf(">: Welcome, %s", (const char *)(a1 + 140));
+    message[i + 140] = s[i];
+  return printf(">: Welcome, %s", message + 140);
 }
 // 9CD: using guessed type char s[140];
 
-int __fastcall main(int argc, const char **argv, const char **envp)
+int main(int argc, const char **argv, const char **envp)
 {
   puts(
     "--------------------------------------------\n"
